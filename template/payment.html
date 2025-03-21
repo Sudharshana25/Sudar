@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultation Payment</title>
+    <link rel="stylesheet" href="payment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="payment-container">
+        <h1>Consultation Payment</h1>
+
+        <form id="paymentForm">
+            <div class="form-group">
+                <label for="patient_id">Patient ID:</label>
+                <div class="input-with-icon">
+                    <input type="text" id="patient_id" name="patient_id" placeholder="Enter Patient ID" required>
+                    <i class="fas fa-user"></i>
+                </div>
+                <p id="patientIdError" class="error-message"></p>
+            </div>
+
+            <div class="form-group">
+                <label for="consultation_fees">Consultation Fees:</label>
+                 <div class="input-with-icon">
+                    <input type="number" id="consultation_fees" name="consultation_fees" placeholder="Enter amount" value="50.00" readonly>
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Payment Method:</label>
+                <div class="payment-methods">
+                    <div class="payment-method" data-method="card"><i class="fas fa-credit-card"></i> Card</div>
+                    <div class="payment-method" data-method="wallet"><i class="fas fa-wallet"></i> Wallet</div>
+                    <div class="payment-method" data-method="netbanking"><i class="fas fa-university"></i> Net Banking</div>
+                </div>
+                <input type="hidden" id="payment_method" name="payment_method" value="">
+                <p id="paymentMethodError" class="error-message"></p>
+            </div>
+
+            <div id="paymentDetails" class="payment-details">
+                <!-- Payment details form will be dynamically injected here -->
+            </div>
+
+
+            <button type="submit" disabled> <i class="fas fa-lock"></i> Pay Now</button>
+            <p id="paymentProcessMessage"></p>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethods = document.querySelectorAll('.payment-method');
+            const paymentMethodInput = document.getElementById('payment_method');
+            const paymentForm = document.getElementById('paymentForm');
+            const patientIdInput = document.getElementById('patient_id');
+            const consultationFeesInput = document.getElementById('consultation_fees');
+            const patientIdError = document.getElementById('patientIdError');
+            const paymentMethodError = document.getElementById('paymentMethodError');
+            const payButton = paymentForm.querySelector('button[type="submit"]');
+            const paymentDetailsDiv = document.getElementById('paymentDetails');
+            const paymentProcessMessage = document.getElementById('paymentProcessMessage');
+
+            // Function to validate Patient ID
+            function validatePatientId() {
+                const patientId = patientIdInput.value.trim();
+                if (!patientId) {
+                    patientIdError.textContent = "Patient ID is required.";
+                    return false;
+                } else if (!/^[a-zA-Z0-9]+$/.test(patientId)) {
+                    patientIdError.textContent = "Invalid Patient ID format (alphanumeric only).";
+                    return false;
+                } else {
+                    patientIdError.textContent = "";
+                    return true;
+                }
+            }
+
+            // Function to dynamically generate payment details form
+            function generatePaymentDetails(paymentMethod) {
+                let htmlContent = '';
+                switch (paymentMethod) {
+                    case 'card':
+                        htmlContent = `
+                            <div class="form-group">
+                                <label for="cardNumber">Card Number:</label>
+                                <input type="text" id="cardNumber" name="cardNumber" placeholder="Enter Card Number" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="expiryDate">Expiry Date:</label>
+                                <input type="text" id="expiryDate" name="expiryDate" placeholder="MM/YY" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cvv">CVV:</label>
+                                <input type="text" id="cvv" name="cvv" placeholder="Enter CVV" required>
+                            </div>
+                        `;
+                        break;
+                    case 'wallet':
+                        htmlContent = `
+                            <div class="form-group">
+                                <label for="upiId">UPI ID:</label>
+                                <input type="text" id="upiId" name="upiId" placeholder="Enter UPI ID" required>
+                            </div>
+                        `;
+                        break;
+                    case 'netbanking':
+                        htmlContent = `
+                            <div class="form-group">
+                                <label for="bankName">Bank Name:</label>
+                                <input type="text" id="bankName" name="bankName" placeholder="Enter Bank Name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="accountNumber">Account Number:</label>
+                                <input type="text" id="accountNumber" name="accountNumber" placeholder="Enter Account Number" required>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        htmlContent = '';
+                }
+                paymentDetailsDiv.innerHTML = htmlContent;
+            }
+
+            // Function to check form validity and enable/disable the Pay Now button
+            function checkFormValidity() {
+                const isPatientIdValid = validatePatientId();
+                const isPaymentMethodSelected = !!paymentMethodInput.value;
+                const arePaymentDetailsValid = (paymentDetailsDiv.innerHTML === '') || paymentDetailsDiv.querySelectorAll('input[required]').length === paymentDetailsDiv.querySelectorAll('input:valid').length;
+                payButton.disabled = !(isPatientIdValid && isPaymentMethodSelected && arePaymentDetailsValid);
+            }
+
+            // Event listeners
+            paymentMethods.forEach(method => {
+                method.addEventListener('click', function() {
+                    paymentMethods.forEach(m => m.classList.remove('selected'));
+                    this.classList.add('selected');
+                    paymentMethodInput.value = this.dataset.method;
+                    paymentMethodError.textContent = "";
+                    generatePaymentDetails(this.dataset.method);
+                    checkFormValidity();
+                });
+            });
+
+            patientIdInput.addEventListener('input', function() {
+                validatePatientId();
+                checkFormValidity();
+            });
+
+            paymentDetailsDiv.addEventListener('input', function() {
+                checkFormValidity();
+            });
+
+            paymentForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+                if (!payButton.disabled) {
+                    // Simulate payment processing
+                    paymentProcessMessage.textContent = "Processing payment...";
+                    setTimeout(() => {
+                        paymentProcessMessage.textContent = "Payment successful!";  //Replace with a server call for real gateways
+                    }, 2000); // Simulate a 2-second delay
+                }
+            });
+
+            // Initial check to disable the button on page load
+            checkFormValidity();
+        });
+    </script>
+</body>
+</html>
